@@ -1,0 +1,13 @@
+{
+  "name": "websocket-presentation-server",
+  "version": "0.1.0",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "author": "SalehKhalil",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "4.7.4"
+  }
+}

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        .room {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .feed-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .feed {
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .form {
+            display: flex;
+            gap: 10px;
+        }
+
+        #message {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex: 1;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff0000;
+            color: #fff;
+            cursor: pointer;
+        }
+    </style>
+    <title>Sala Vermelha</title>
+</head>
+<body>
+    <div class="room">
+        <h1 style="color: red;">Sala Vermelha</h1>
+        <div class="informations">
+            <p>Usuários conectados: <span id="users-connected">0</span></p>
+            <p>Seu ID: <span id="user-id"></span></p>
+        </div>
+        <div class="feed-container">
+            <div class="feed" id="messages-feed"></div>
+            <div class="form">
+                <input type="text" id="message" placeholder="Digite sua mensagem">
+                <button type="submit">Enviar</button>
+            </div>
+        </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>       
+        const socketRooms = io("https://dark-mangos-dress.loca.lt/rooms");
+        const sendButton = document.querySelector("button");
+        const usersConnectedElement = document.getElementById("users-connected");
+        const userIdElement = document.getElementById("user-id");
+        const messagesFeedElement = document.getElementById("messages-feed");
+        let userId = null;
+
+        const getUserIP = async () => {
+            const response = await fetch("https://api64.ipify.org?format=json")
+
+            const data = await response.json();
+
+            return data.ip;
+        }
+
+        sendButton.addEventListener("click", () => {
+            const messageInput = document.getElementById("message");
+            const message = messageInput.value;
+
+            if (!message) return;
+
+            messageInput.value = "";
+            socketRooms.emit("message", { userId, message, roomType: "red" });
+        })
+
+        window.addEventListener("load", async () => {
+            try {
+                const userIP = await getUserIP();
+
+                userId = userIP;
+
+                userIdElement.innerHTML = userId;
+                socketRooms.emit("user-connected", {userId, roomType: "red"});
+            } catch (err) {
+                console.error(err)
+                alert('Falha ao gerar ID do usuário, recarregue a tela, por favor.')
+            }
+        })
+
+        window.addEventListener("beforeunload", () => {
+            socketRooms.emit("user-disconnected", { userId, roomType: "red" });
+        })
+
+        window.addEventListener("close", () => {
+            socketRooms.emit("user-disconnected", { userId, roomType: "red" });
+        })
+
+        socketRooms.on("update-room", ({usersConnected, messages}) => {
+            usersConnectedElement.innerHTML = usersConnected;
+            messagesFeedElement.innerHTML = messages.map(message => `<p><strong>${message.userId}:</strong> ${message.message}</p>`).join("");
+        })
+    </script>
+</body>
+</html>

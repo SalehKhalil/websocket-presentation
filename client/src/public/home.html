@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        .home {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .rooms {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .red-button {
+            background-color: #ff0000;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: pointer;
+            width: 200px;
+        }
+
+        .blue-button {
+            background-color: #0000ff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: pointer;
+            width: 200px;
+        }
+
+        .feed-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .publish-container {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .feed-list {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .publication {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background-color: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+        }
+
+        .publication-img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+        .publi-actions {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .publi-actions img {
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .avaliation-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .informations {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+    </style>
+    <title>Instasock</title>
+</head>
+<body>
+    <div class="home">
+        <h1>Instasock</h1>
+
+        <div class="rooms">
+            <button id="red-room" class="red-button">Sala Vermelha</button>
+            <button id="blue-room" class="blue-button">Sala Azul</button>
+        </div>
+
+        <div class="informations">
+            <strong>Usuários Online: <span id="users-connected"></span></strong>
+            <br />
+            <strong>Publicações: <span id="publications-made"></span></strong>
+            <br>
+            <strong>Interações: <span id="interactions-made"></span></strong>
+        </div>
+
+        <div class="feed-container">
+            <h2>Feed</h2>
+            <div class="publish-container">
+                <input id="img-url" placeholder="URL da Imagem" />
+                <button id="publish">Publicar</button>
+            </div>
+            <div id="feed" class="feed-list"></div>
+        </div>
+    </div>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>       
+        const socketHome = io("https://dark-mangos-dress.loca.lt/home");
+        const feed = document.getElementById("feed");
+        const redRoom = document.getElementById("red-room");
+        const blueRoom = document.getElementById("blue-room");
+        const publish = document.getElementById("publish");
+        const usersConnected = document.getElementById("users-connected");
+        const publicationsMade = document.getElementById("publications-made");
+        let userId = null;
+
+        const like = (id) => {
+            socketHome.emit("like", { publicationId: id, userId });
+        }
+
+        const dislike = (id) => {
+            socketHome.emit("dislike", { publicationId: id, userId });
+        }
+
+        const isValidImageURL = (url) => {
+            return url.match(/\.(jpeg|jpg|gif|png)$/) != null;
+        }
+
+        const getUserIP = async () => {
+            const response = await fetch("https://api64.ipify.org?format=json")
+
+            const data = await response.json();
+
+            return data.ip;
+        }
+
+        const updateFeed = (publications) => {
+            feed.innerHTML = "";
+
+            publications.forEach((publi) => {
+                const publicationElement = document.createElement("div");
+
+                publicationElement.classList.add("publication");
+
+                publicationElement.innerHTML = `
+                    <img class="publication-img" src=${publi.img} />
+                    <div class="publi-actions">
+                        <div class="avaliation-container">
+                            <img id="like" src="https://cdn-icons-png.flaticon.com/512/4926/4926585.png " />
+                            ${publi.likes}
+                        </div>
+
+                        <div class="avaliation-container">
+                            <img id="dislike" src="https://cdn-icons-png.flaticon.com/512/4926/4926589.png" />
+                            ${publi.dislikes}
+                        </div>
+                    </div>
+                `;
+
+                publicationElement.querySelector("#like").addEventListener("click", () => like(publi.id));
+                publicationElement.querySelector("#dislike").addEventListener("click", () => dislike(publi.id));
+
+                feed.appendChild(publicationElement);
+            })
+
+            publicationsMade.innerHTML = publications.length;
+        }
+
+        window.addEventListener('load', async () => {
+            try {
+                const userIP = await getUserIP();
+
+                userId = userIP;
+
+                socketHome.emit("user-connected", userId);
+            } catch (err) {
+                console.error(err)
+                alert('Falha ao gerar ID do usuário, recarregue a tela, por favor.')
+            }
+        })
+
+        redRoom.addEventListener("click", () => {
+            window.location.href = "/red";
+        });
+
+        blueRoom.addEventListener("click", () => {
+            window.location.href = "/blue";
+        });
+
+        publish.addEventListener("click", () => {
+            const imageUrlInput = document.getElementById("img-url");
+            const imgUrl = imageUrlInput.value;
+
+            if (!isValidImageURL(imgUrl)) {
+                alert("A URL da imagem é inválida");
+                return;
+            }
+
+            imageUrlInput.value = "";
+
+            socketHome.emit("publish", { img: imgUrl });
+        });
+
+        window.addEventListener("beforeunload", () => {
+            socketHome.emit("user-disconnected", userId);
+        })
+
+        window.addEventListener("close", () => {
+            socketHome.emit("user-disconnected", userId);
+        })
+
+        socketHome.on("update-feed", (publications) => updateFeed(publications))
+
+        socketHome.on("update-users-connected", (usersLength) => {
+            usersConnected.innerHTML = usersLength;
+        })
+
+        socketHome.on("update-interactions", (interactions) => {
+            document.getElementById("interactions-made").innerHTML = interactions;
+        })
+
+        socketHome.emit("load-feed", null, (publications) => updateFeed(publications))
+    </script>
+</body>
+</html>
