@@ -4,7 +4,7 @@ const { pingRoute } = require('./routes/ping.route');
 const { feedEvents } = require('./events/feed.event');
 const { roomsEvents } = require('./events/rooms.event');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.SERVER_PORT || 3000;
 const server = createServer(pingRoute);
 const socketIoServer = new Server(server, {cors: { origin: '*' }});
 
