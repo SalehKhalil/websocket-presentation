@@ -1,11 +1,19 @@
 const { Server } = require('socket.io');
+const express = require('express');
 const { createServer } = require('http')
-const { pingRoute } = require('./routes/ping.route');
 const { feedEvents } = require('./events/feed.event');
 const { roomsEvents } = require('./events/rooms.event');
 
-const PORT = process.env.SERVER_PORT || 3000;
-const server = createServer(pingRoute);
+const PORT = process.env.PORT || 3000;
+const app = express();
+
+app.get('/ping', (_, res) => res.send('pong'));
+
+app.get('/', (_, res) => res.sendFile(__dirname + '/public/home.html'));
+app.get('/red', (_, res) => res.sendFile(__dirname + '/public/red-room.html'));
+app.get('/blue', (_, res) => res.sendFile(__dirname + '/public/blue-room.html'));
+
+const server = createServer(app);
 const socketIoServer = new Server(server, {cors: { origin: '*' }});
 
 socketIoServer.of('/home').on('connection', (socket) => {
